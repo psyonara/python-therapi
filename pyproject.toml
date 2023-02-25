@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "therapi"
+version = "0.0.1"
+description = "Therapy to ease the pain of writing boilerplate code to consume JSON APIs."
+authors = ["Helmut Irle <me@helmut.dev>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.28.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
