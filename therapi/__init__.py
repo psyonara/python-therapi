@@ -8,7 +8,7 @@ class BaseAPIConsumer:
         if base_url:
             self.base_url = base_url
 
-        if not base_url:
+        if not self.base_url:
             raise ValueError(
                 "A base URL is required. Specify it as a class member, or when initializing your class instance."
             )
