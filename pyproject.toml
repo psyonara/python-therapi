@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "therapi"
-version = "0.0.2"
-description = "Therapy to ease the pain of writing boilerplate code to consume JSON APIs."
+version = "0.0.3"
+description = "Therapy to ease the pain of writing boilerplate JSON API consumers."
 authors = ["Helmut Irle <me@helmut.dev>"]
 license = "MIT"
 readme = "README.md"

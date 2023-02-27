@@ -17,5 +17,9 @@ class BaseAPIConsumer:
         parts = [self.base_url] + [part.strip("/") for part in url_parts]
         return "/".join(parts)
 
-    def base_request(self, method, path):
-        return requests.request(method, self.construct_url(path))
+    def base_request(self, method, path, params=None):
+        return requests.request(method, self.construct_url(path), params=params)
+
+    def json_request(self, method, path, params=None):
+        response = self.base_request(method, path, params)
+        return response.json()

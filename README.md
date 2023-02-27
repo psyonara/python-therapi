@@ -20,8 +20,8 @@ Now we can use this class to make API calls to different endpoints, as follows:
 
 ```python
 consumer = MyAPIConsumer()
-result = consumer.base_request(method="get", path="items")
-print(result.json())
+result = consumer.json_request(method="get", path="items", params={"id": 123})
+print(result)
 ```
 
 We would see, for example, this response:
