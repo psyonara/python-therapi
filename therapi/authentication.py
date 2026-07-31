@@ -1,13 +1,29 @@
-from therapi import BaseModifier
+from therapi.base import RequestModifier
 from therapi.exceptions import AuthenticationError
 
 
-class TokenBearerAuthentication(BaseModifier):
+class TokenBearerAuthentication(RequestModifier):
     """
     Authenticate a request with Token Bearer Authentication.
     """
-    def modify_headers(self, headers: dict):
-        if "bearer_token" not in self.context:
-            raise AuthenticationError("Bearer Token not found in context")
+    def __init__(self, token: str):
+        if not token:
+            raise AuthenticationError("Bearer token must be a non-empty string.")
+        self.token = token
 
-        headers["Authorization"] = f"Bearer {self.context.get('bearer_token')}"
+    def modify_headers(self, headers: dict):
+        headers["Authorization"] = f"Bearer {self.token}"
+
+
+class APIKeyAuthentication(RequestModifier):
+    """
+    Authenticate a request with an API Key.
+    """
+    def __init__(self, api_key: str, header_field: str = "X-API-Key"):
+        if not api_key:
+            raise AuthenticationError("API key must be a non-empty string.")
+        self.api_key = api_key
+        self.header_field = header_field
+
+    def modify_headers(self, headers: dict):
+        headers[self.header_field] = self.api_key
