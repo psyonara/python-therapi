@@ -443,6 +443,76 @@ announce (Reddit r/Python, PyPI feed, project README on GitHub profile).
 
 ---
 
+## Execution plan (chunked)
+
+How the roadmap is implemented operationally. The roadmap above defines
+*what* and *why*; this section records *in what order* and *how*.
+
+### Process rules
+
+- One chunk = one roadmap subsection (e.g. §2.1) or a tightly-coupled
+  cluster of subsections (e.g. §1.4 + §1.5, which both rewrite
+  `pyproject.toml`).
+- Per-chunk loop:
+  1. Plan the chunk (read-only; re-read relevant § + current code;
+     confirm with user).
+  2. Implement + run the chunk's verifier(s); leave the tree green.
+  3. Update `roadmap.md`: strikethrough completed bullets inline with
+     `✓`; append one line to `### Progress log` (below).
+  4. User reviews the diff (code + roadmap edits); single squash commit
+     with a message the user approves.
+- Real `git tag` + GitHub Release + PyPI publish at each phase
+  boundary (`0.1.0`, `0.2.0`, `1.0.0`). The release itself is its own
+  chunk.
+- `.python-version` pinned to the floor (`3.11`).
+
+### Phase 1 — remaining chunks
+
+| #  | Chunk                          | Covers (§)        | Verifier                                                              |
+| -- | ------------------------------ | ----------------- | --------------------------------------------------------------------- |
+| B  | uv + httpx + Python 3.11 floor | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
+| C  | Test suite (golden, respx)     | §1.7              | `uv run pytest` green                                                 |
+| D  | Typing + `py.typed`            | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
+| E  | CI scaffolding                 | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
+| F  | Repo hygiene                   | §1.9              | `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, templates exist; `dist/` untracked |
+| G  | Release `0.1.0`                | §1.10             | tag + GitHub Release + PyPI publish                                   |
+
+### Phase 2 — chunks (coarse; detailed per-chunk plans written when we get there)
+
+- §2.1 + §2.2 — session reuse (`httpx.Client`) + typed error model
+  (coupled: both touch `json_request`).
+- §2.3 — retry / backoff (`RetryModifier`).
+- §2.4 — pagination iterator (`Paginator` + `iter_paginated`).
+- §2.5 — more auth (`BasicAuthentication`, OAuth2 client credentials).
+- §2.6 — configurable timeouts (`httpx.Timeout` split).
+- §2.7 — observability (`LoggingModifier` verbosity levels).
+- §2.8 — parser-friendly responses (`raw=True`, streaming helpers).
+- §2.9 — plugin framework, sub-split into:
+  - 2.9a `Plugin` contract + `Request/Response/ErrorContext` dataclasses;
+  - 2.9b thin `*Plugin` adapters for each built-in modifier (per §2.9 table);
+  - 2.9c entry-point discovery (`therapi.plugins` group, `load_plugins(allowlist=...)`).
+- §2.10 — release `0.2.0`.
+
+### Phase 3 — chunks (coarse)
+
+- §3.1 — docs site (mkdocs + mkdocstrings).
+- §3.2 — README overhaul.
+- §3.3 — CHANGELOG semver discipline + CI check.
+- §3.4 — CI/CD hardened (`pip-audit`, `dependabot`, coverage gate,
+  release workflow).
+- §3.5 — community files (`CODE_OF_CONDUCT.md`, issue/PR templates).
+- §3.6 — final cleanup.
+- §3.7 — release `1.0.0`.
+
+### Progress log
+
+Appended per chunk on completion. Format:
+`<YYYY-MM-DD> · <chunk name> · §X.Y[, §X.Z] · <commit short SHA>`
+
+_(no entries yet — Phase 1 chunks B–G are pending)_
+
+---
+
 ## Suggested first execution chunk (Phase 1)
 
 Recommended order when picking up implementation:
