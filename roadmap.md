@@ -7,8 +7,10 @@ This document records the agreed path from the current pre-release state
 
 ## Locked-in decisions
 
-- **Sync-only** (`requests`) for 1.0 — async support is deferred to a
-  post-1.0 candidate.
+- **Sync-only** (`httpx`) for 1.0 — async support is deferred to a
+  post-1.0 candidate; `httpx` is used (not `requests`) because its sync
+  and async APIs are identical, so a later async port only swaps
+  `Client` → `AsyncClient` plus `await`, with no library churn.
 - **Python `^3.11`** floor — drops EOL'd 3.8/3.9/3.10 and unlocks
   modern typing ergonomics.
 - **No response models** in 1.0 — endpoints return raw JSON
@@ -32,7 +34,7 @@ This document records the agreed path from the current pre-release state
 | 2  | `therapi/base.py`               | ~~`construct_url` mutates caller's `params`~~ — fixed (local copy) ✓    |
 | 3  | `therapi/__init__.py`           | ~~`import *` at bottom~~ — fixed (pure re-export from `base.py`) ✓      |
 | 4  | `therapi/authentication.py`     | ~~`AuthenticationError` never raised~~ — fixed (guards in auth ctors) ✓ |
-| 5  | `therapi/base.py`               | ~~No request timeout~~ — fixed (instance `timeout=30.0`, passed to `requests`) ✓ |
+| 5  | `therapi/base.py`               | ~~No request timeout~~ — fixed (instance `timeout=30.0`, passed to `requests`; `requests`→`httpx` swap in §1.4) ✓ |
 | 6  | `examples/thingiverse/`         | ~~Example shipped inside package~~ — moved out of `therapi/` ✓         |
 | 7  | repo                            | Zero tests — pytest is a dev dep but unused *(open — deferred subset)* |
 | 8  | repo                            | No CI, no lint, no type-check, no `py.typed` *(open — deferred subset)* |
@@ -119,10 +121,16 @@ tool covering venvs, resolution, locking, running, and building.
     `license`, `requires-python`, `authors`, `dependencies`,
     `classifiers`.
   - `[dependency-groups]` for dev tooling (`pytest`, `ruff`, `mypy`,
-    `responses`, `pytest-cov`).
+    `respx`, `pytest-cov`).
   - Build backend switches from `poetry-core` to `hatchling` (standard,
     pure-Python wheel, no Poetry dependency at build time).
   - Remove all `[tool.poetry.*]` tables.
+  - Swap runtime dependency `requests` → `httpx` in
+    `[project].dependencies`; `httpx` needs no extras for sync use.
+    The only code change is `therapi/base.py` (`import httpx`;
+    `requests.request(...)` → `httpx.request(...)`); `raise_for_status()`
+    and `.json()` are identical on `httpx.Response`, so downstream
+    modifiers/auth/example are unchanged.
 - Replace `poetry.lock` with `uv.lock`, committed for reproducible CI.
 - Add a `.python-version` pin (e.g. `3.11`) so local dev and CI agree.
 - Adopt the `uv` developer workflow:
@@ -139,7 +147,7 @@ tool covering venvs, resolution, locking, running, and building.
 
 - `pyproject.toml` (`[project]`): `requires-python = ">=3.11"`.
 - Add dev deps under the `dev` dependency group: `pytest = ">=8,<9"`,
-  `responses = ">=0.25"`, `ruff = ">=0.6"`, `mypy = ">=1.11"`,
+  `respx = ">=0.21"` (httpx mock), `ruff = ">=0.6"`, `mypy = ">=1.11"`,
   `pytest-cov`.
 
 ### 1.6 Type the library and ship `py.typed` (#8)
@@ -155,7 +163,7 @@ Layout under `tests/` mirroring `therapi/`:
 
 ```
 tests/
-  conftest.py            # fixtures: mock server via `responses`
+  conftest.py            # fixtures: mock httpx transport via `respx`
   test_construct_url.py
   test_json_request.py
   test_call_endpoint.py
@@ -198,14 +206,15 @@ Tag, GitHub Release, publish to PyPI.
 
 ### 2.1 Session reuse
 
-- `BaseAPIConsumer` owns a `requests.Session` (connection pooling,
-  cookie jar, persistent headers).
+- `BaseAPIConsumer` owns an `httpx.Client` (connection pooling,
+  cookie jar, persistent headers, HTTP keep-alive).
 - Add `close()` and `__enter__` / `__exit__` for
-  `with MyConsumer() as c:` usage.
+  `with MyConsumer() as c:` usage (mirrors `httpx.Client`'s own
+  context-manager protocol).
 
 ### 2.2 Error model
 
-Replace raw `requests.HTTPError` propagation with typed exceptions:
+Replace raw `httpx.HTTPError` propagation with typed exceptions:
 
 ```
 TherapiError                      # base
@@ -217,7 +226,12 @@ TherapiError                      # base
 └── ValidationError               # local param validation
 ```
 
-Catch `requests.RequestException` inside `json_request` and translate.
+Catch `httpx.HTTPError` (and its subclasses) inside `json_request` and
+translate. `httpx` already splits the tree cleanly —
+`httpx.TransportError` → `TransportError`, `httpx.TimeoutException`
+→ `TimeoutError`, `httpx.HTTPStatusError` → `HTTPStatusError` (with
+`.status_code`, `.response`, `.request.url`), so the translation is
+near 1:1.
 
 ### 2.3 Retry / backoff
 
@@ -255,8 +269,11 @@ into `json_request`.
 ### 2.6 Configurable timeouts & sizes
 
 - `BaseAPIConsumer(base_url, timeout=..., connect_timeout=...,
-  read_timeout=...)`.
-- Per-call override in `json_request(..., timeout=...)`.
+  read_timeout=...)`; build an `httpx.Timeout(connect=..., read=...,
+  write=..., pool=...)` from the split kwargs (replaces the single-float
+  `self.timeout` introduced in §1.3).
+- Per-call override in `json_request(..., timeout=...)` (accepts a float
+  or an `httpx.Timeout`).
 
 ### 2.7 Observability
 
@@ -269,10 +286,10 @@ into `json_request`.
 ### 2.8 Parser-friendly responses
 
 - `call_endpoint(..., raw=False)` returns parsed JSON; `raw=True`
-  returns the `requests.Response` for edge cases (streaming downloads,
+  returns the `httpx.Response` for edge cases (streaming downloads,
   non-JSON endpoints).
 - Add `download(url, dest)` and `iter_stream(url)` helpers for
-  binary/streaming.
+  binary/streaming (use `httpx.Response.iter_bytes()`).
 
 ### 2.9 Plugin framework
 
@@ -363,7 +380,7 @@ separate `therapi-*` packages using the same entry-point group.
 
 - `mkdocs` + `mkdocstrings[python]` material theme, GitHub Pages.
 - Pages: quickstart, `BaseAPIConsumer`, `Endpoint`, modifiers, auth,
-  pagination, retry, error handling, migration from raw `requests`,
+  pagination, retry, error handling, migration from raw `httpx`/`requests`,
   cookbook.
 - API reference auto-generated from docstrings.
 
@@ -412,7 +429,11 @@ announce (Reddit r/Python, PyPI feed, project README on GitHub profile).
 
 ## Post-1.0 candidates (deferred, not committed)
 
-- Async backend via `httpx` (since 1.0 stays sync-only).
+- Async backend — having used `httpx` (sync `Client`) in 1.0, the
+  async port only requires an `AsyncAPIConsumer` twin using
+  `httpx.AsyncClient` + `await client.request(...)`; the request/
+  response modifier pipeline is reused verbatim (modifiers stay sync).
+  Same library, different client class.
 - Response-model integration (pydantic v2 or stdlib dataclasses).
 - OpenAPI-spec → `BaseAPIConsumer` codegen CLI.
 - Rate-limit-aware `RateLimitPlugin` upgrade to a real token bucket
