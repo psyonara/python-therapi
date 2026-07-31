@@ -59,9 +59,9 @@ This document records the agreed path from the current pre-release state
 > `import *` hack. The modifiers/auth submodules now import from
 > `therapi.base` (no circular `import therapi`).
 
-- Move `Endpoint`, `BaseAPIConsumer`, `RequestModifier`,
-  `ResponseModifier` from `therapi/__init__.py` into `therapi/base.py`.
-- `therapi/__init__.py` becomes a pure re-export surface:
+- ~~Move `Endpoint`, `BaseAPIConsumer`, `RequestModifier`,
+  `ResponseModifier` from `therapi/__init__.py` into `therapi/base.py`.~~ ✓
+- ~~`therapi/__init__.py` becomes a pure re-export surface:~~ ✓
 
   ```python
   from therapi.base import BaseAPIConsumer, Endpoint, RequestModifier, ResponseModifier
@@ -85,30 +85,30 @@ This document records the agreed path from the current pre-release state
   )
   ```
 
-- Eliminates the `import *` hack at the bottom of `__init__.py` (#3).
+- ~~Eliminates the `import *` hack at the bottom of `__init__.py` (#3).~~ ✓
 
 ### 1.2 Move the example out of the package (#6)
 
-- Move `therapi/thingipy.py` → `examples/thingiverse/thingiverse_client.py`.
-- Certify `therapi/` contains only library code.
+- ~~Move `therapi/thingipy.py` → `examples/thingiverse/thingiverse_client.py`.~~ ✓
+- ~~Certify `therapi/` contains only library code.~~ ✓
 
 ### 1.3 Fix correctness bugs
 
 - `therapi/base.py`:
-  - `request_modifiers: list | None = None` (class attr) and
+  - ~~`request_modifiers: list | None = None` (class attr) and
     `request_modifiers or []` in `__init__`; never use a mutable class
-    default (#1).
-  - `construct_url` operates on `params = dict(params or {})` (copy) and
+    default (#1).~~ ✓
+  - ~~`construct_url` operates on `params = dict(params or {})` (copy) and
     does not modify the caller's dict — leftover params are returned or
-    carried internally — no caller-side side effects (#2).
-- `therapi/authentication.py`: raise `AuthenticationError` when
+    carried internally — no caller-side side effects (#2).~~ ✓
+- ~~`therapi/authentication.py`: raise `AuthenticationError` when
   `token` / `api_key` is empty or `None`, at construction or at
-  `modify_headers` time (#4).
-- `therapi/base.py` `json_request`: pass `timeout=self.timeout` (instance
-  default, e.g. 30s, overridable per call) (#5).
-- `LoggingModifier`: add `redact_headers=("Authorization", "X-API-Key",
+  `modify_headers` time (#4).~~ ✓
+- ~~`therapi/base.py` `json_request`: pass `timeout=self.timeout` (instance
+  default, e.g. 30s, overridable per call) (#5).~~ ✓
+- ~~`LoggingModifier`: add `redact_headers=("Authorization", "X-API-Key",
   ...)` kwarg; replace redacted values with `<redacted>` before logging
-  (#10).
+  (#10).~~ ✓ (Note: `requests`→`httpx` swap of this call site is deferred to §1.4 / Chunk B.)
 
 ### 1.4 Switch to `uv` (drop Poetry)
 
@@ -509,7 +509,11 @@ How the roadmap is implemented operationally. The roadmap above defines
 Appended per chunk on completion. Format:
 `<YYYY-MM-DD> · <chunk name> · §X.Y[, §X.Z] · <commit short SHA>`
 
-_(no entries yet — Phase 1 chunks B–G are pending)_
+- 2026-07-31 · Chunk A: restructure package, fix correctness bugs, move example · §1.1, §1.2, §1.3 · c8307ab
+- 2026-07-31 · (roadmap-only) adopt httpx sync-only in place of requests · locked-in decisions, §1.4/1.5/1.7/2.1/2.2/2.6/2.8/3.1, post-1.0 · 5e2f2c2
+- 2026-07-31 · (roadmap-only) record chunked execution strategy · execution plan · 06940a0
+
+_(next: Phase 1 chunks B–G are pending)_
 
 ---
 
