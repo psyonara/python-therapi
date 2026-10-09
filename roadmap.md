@@ -531,7 +531,7 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · (roadmap-only) adopt httpx sync-only in place of requests · locked-in decisions, §1.4/1.5/1.7/2.1/2.2/2.6/2.8/3.1, post-1.0 · 5e2f2c2
 - 2026-07-31 · (roadmap-only) record chunked execution strategy · execution plan · 06940a0
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
-- 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · <SHA pending>
+- 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · b513681
 
 _(next: Phase 1 chunks D–G are pending)_
 
