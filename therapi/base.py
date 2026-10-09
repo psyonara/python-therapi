@@ -41,24 +41,20 @@ class BaseAPIConsumer:
                 "A base URL is required. Specify it as a class member, or when initializing your class instance."
             )
 
-    def construct_url(self, *url_parts: str, params: dict = None):
+    def _build_url(self, *url_parts: str, params: dict = None):
         parts = [self.base_url.strip("/")] + [part.strip("/") for part in url_parts]
         url = "/".join(parts) + "/"
 
-        if params is None:
-            return url
-
-        params = dict(params)
-        used_params = []
-        for param, value in params.items():
+        remaining_params = dict(params or {})
+        for param, value in list(remaining_params.items()):
             if f"<{param}>" in url:
                 url = url.replace(f"<{param}>", f"{value}")
-                used_params.append(param)
+                del remaining_params[param]
 
-        for param in used_params:
-            del params[param]
+        return url, remaining_params
 
-        return url
+    def construct_url(self, *url_parts: str, params: dict = None):
+        return self._build_url(*url_parts, params=params)[0]
 
     def json_request(self, method, path, params=None, payload: dict = None):
         headers = {}
@@ -67,11 +63,11 @@ class BaseAPIConsumer:
             modifier.modify_headers(headers)
             modifier.modify_params(params)
 
-        url = self.construct_url(path, params=params)
+        url, query_params = self._build_url(path, params=params)
         response = httpx.request(
             method,
             url,
-            params=params,
+            params=query_params,
             json=payload,
             headers=headers,
             timeout=self.timeout,

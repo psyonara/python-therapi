@@ -36,7 +36,7 @@ This document records the agreed path from the current pre-release state
 | 4  | `therapi/authentication.py`     | ~~`AuthenticationError` never raised~~ — fixed (guards in auth ctors) ✓ |
 | 5  | `therapi/base.py`               | ~~No request timeout~~ — fixed (instance `timeout=30.0`, passed to `requests`; `requests`→`httpx` swap in §1.4) ✓ |
 | 6  | `examples/thingiverse/`         | ~~Example shipped inside package~~ — moved out of `therapi/` ✓         |
-| 7  | repo                            | Zero tests — pytest is a dev dep but unused *(open — deferred subset)* |
+| 7  | repo                            | ~~Zero tests~~ — fixed (55 tests, 100% coverage) ✓ *(CI/lint/type-check still deferred, #8)* |
 | 8  | repo                            | No CI, no lint, no type-check, no `py.typed` *(open — deferred subset)* |
 | 9  | `pyproject.toml`                | `python = "^3.8"` — 3.8 EOL; also `list[X]` in code needs ≥3.9 *(open)* |
 | 10 | `therapi/modifiers.py`          | ~~`LoggingModifier` logs raw headers~~ — fixed (`redact_headers`) ✓     |
@@ -101,6 +101,9 @@ This document records the agreed path from the current pre-release state
   - ~~`construct_url` operates on `params = dict(params or {})` (copy) and
     does not modify the caller's dict — leftover params are returned or
     carried internally — no caller-side side effects (#2).~~ ✓
+    (Chunk C follow-up: `json_request` still sent *used* path params as
+    query params — e.g. `/things/1/?thing_id=1`. `_build_url` now returns
+    the unconsumed params and `json_request` sends only those.)
 - ~~`therapi/authentication.py`: raise `AuthenticationError` when
   `token` / `api_key` is empty or `None`, at construction or at
   `modify_headers` time (#4).~~ ✓
@@ -168,7 +171,7 @@ tool covering venvs, resolution, locking, running, and building.
   bare `list` (the 3.11 floor makes this clean).
 - Enable `mypy --strict` (or a curated strict subset) in CI.
 
-### 1.7 Tests (zero → comprehensive) (#7)
+### 1.7 Tests (zero → comprehensive) (#7) ✓
 
 Layout under `tests/` mirroring `therapi/`:
 
@@ -185,7 +188,11 @@ tests/
   test_session_lifecycle.py   # added in Phase 2
 ```
 
-Coverage target: ≥ 90% on `therapi/`.
+~~Coverage target: ≥ 90% on `therapi/`.~~ ✓ (Chunk C: 55 tests, 100%
+statement coverage; enforced `--cov-fail-under` gate deferred to §3.4.)
+
+`test_session_lifecycle.py` is deferred to Phase 2 (§2.1) — no session
+support exists yet.
 
 ### 1.8 Initial CI scaffolding (#8)
 
@@ -482,7 +489,7 @@ How the roadmap is implemented operationally. The roadmap above defines
 | #  | Chunk                          | Covers (§)        | Verifier                                                              |
 | -- | ------------------------------ | ----------------- | --------------------------------------------------------------------- |
 | ~~B~~ ✓ | ~~uv + httpx + Python 3.11 floor~~ done | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
-| C  | Test suite (golden, respx)     | §1.7              | `uv run pytest` green                                                 |
+| ~~C~~ ✓ | ~~Test suite (golden, respx)~~ done | §1.7              | `uv run pytest` green                                                 |
 | D  | Typing + `py.typed`            | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
 | E  | CI scaffolding                 | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
 | F  | Repo hygiene                   | §1.9              | `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, templates exist; `dist/` untracked |
@@ -524,8 +531,9 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · (roadmap-only) adopt httpx sync-only in place of requests · locked-in decisions, §1.4/1.5/1.7/2.1/2.2/2.6/2.8/3.1, post-1.0 · 5e2f2c2
 - 2026-07-31 · (roadmap-only) record chunked execution strategy · execution plan · 06940a0
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
+- 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · <SHA pending>
 
-_(next: Phase 1 chunks C–G are pending)_
+_(next: Phase 1 chunks D–G are pending)_
 
 ---
 
