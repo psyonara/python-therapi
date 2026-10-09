@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import requests
+import httpx
 
 
 @dataclass
@@ -68,8 +68,14 @@ class BaseAPIConsumer:
             modifier.modify_params(params)
 
         url = self.construct_url(path, params=params)
-        response = requests.request(
-            method, url, params=params, json=payload, headers=headers, timeout=self.timeout
+        response = httpx.request(
+            method,
+            url,
+            params=params,
+            json=payload,
+            headers=headers,
+            timeout=self.timeout,
+            follow_redirects=True,
         )
         response.raise_for_status()
 

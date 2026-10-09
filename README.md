@@ -34,3 +34,23 @@ We would see, for example, this response:
   ]
 }
 ```
+
+---
+
+## Development
+
+This project uses [`uv`](https://docs.astral.sh/uv/) for dependency management,
+virtual environments, running tools, and building packages. Install it once
+per machine (see the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)).
+
+```console
+$ uv sync                        # create/refresh .venv, install the project + dev group
+$ uv run pytest                  # run the test suite
+$ uv run ruff check              # lint
+$ uv run mypy therapi            # type-check
+$ uv build                       # build sdist + wheel
+$ uv publish                     # upload to PyPI
+```
+
+The Python version is pinned in [`.python-version`](.python-version); the
+lockfile ([`uv.lock`](uv.lock)) is committed for reproducible environments.

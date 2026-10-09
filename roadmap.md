@@ -116,7 +116,7 @@ The project currently uses Poetry (`[tool.poetry]`, `poetry.lock`,
 `poetry-core` build backend). Migrate to `uv` for a single, fast Rust
 tool covering venvs, resolution, locking, running, and building.
 
-- Convert `pyproject.toml` from the Poetry schema to PEP 621 standard:
+- ~~Convert `pyproject.toml` from the Poetry schema to PEP 621 standard:
   - `[project]` table with `name`, `version`, `description`, `readme`,
     `license`, `requires-python`, `authors`, `dependencies`,
     `classifiers`.
@@ -130,25 +130,36 @@ tool covering venvs, resolution, locking, running, and building.
     The only code change is `therapi/base.py` (`import httpx`;
     `requests.request(...)` → `httpx.request(...)`); `raise_for_status()`
     and `.json()` are identical on `httpx.Response`, so downstream
-    modifiers/auth/example are unchanged.
-- Replace `poetry.lock` with `uv.lock`, committed for reproducible CI.
-- Add a `.python-version` pin (e.g. `3.11`) so local dev and CI agree.
-- Adopt the `uv` developer workflow:
+    modifiers/auth/example are unchanged.~~ ✓ (One deliberate addition
+    beyond the two-line swap: `follow_redirects=True` is passed to
+    `httpx.request` — `httpx` does not follow redirects by default,
+    `requests` does, so this preserves caller-visible behavior. Known
+    caller-visible change: `raise_for_status()` now raises
+    `httpx.HTTPStatusError`/`httpx.TimeoutException` instead of the
+    `requests` equivalents; a typed error model is §2.2.)
+- ~~Replace `poetry.lock` with `uv.lock`, committed for reproducible CI.~~ ✓
+- ~~Add a `.python-version` pin (e.g. `3.11`) so local dev and CI agree.~~ ✓ (was gitignored and held a stale pyenv venv name; now pinned to `3.11` and un-ignored)
+- ~~Adopt the `uv` developer workflow:
   - `uv sync` — create/refresh the venv, install the project + dev group.
   - `uv run pytest` / `uv run ruff check` / `uv run mypy therapi`.
   - `uv build` — produce sdist + wheel.
-  - `uv publish` — upload to PyPI (trusted publishing / API token).
-- Update `CONTRIBUTING.md` (§1.9) and the README quickstart to show
-  `uv` commands.
-- Delete `poetry.lock` and Poetry config from the repo once CI is green
-  on `uv`.
+  - `uv publish` — upload to PyPI (trusted publishing / API token).~~ ✓ (workflow adopted; README documents it — `uv publish` first exercised at the §1.10 release)
+- ~~Update `CONTRIBUTING.md` (§1.9) and the README quickstart to show
+  `uv` commands.~~ ✓ (README done; `CONTRIBUTING.md` does not exist yet
+  and is created with `uv` commands in §1.9 / chunk F)
+- ~~Delete `poetry.lock` and Poetry config from the repo once CI is green
+  on `uv`.~~ ✓ (deleted immediately — no CI exists yet (§1.8 / chunk E),
+  so the gate had nothing to wait for)
 
 ### 1.5 Set Python floor `^3.11` (#9)
 
-- `pyproject.toml` (`[project]`): `requires-python = ">=3.11"`.
-- Add dev deps under the `dev` dependency group: `pytest = ">=8,<9"`,
+> Absorbed into the §1.4 chunk (user decision — both rewrite
+> `pyproject.toml`, so one edit instead of two).
+
+- ~~`pyproject.toml` (`[project]`): `requires-python = ">=3.11"`.~~ ✓
+- ~~Add dev deps under the `dev` dependency group: `pytest = ">=8,<9"`,
   `respx = ">=0.21"` (httpx mock), `ruff = ">=0.6"`, `mypy = ">=1.11"`,
-  `pytest-cov`.
+  `pytest-cov`.~~ ✓
 
 ### 1.6 Type the library and ship `py.typed` (#8)
 
@@ -470,7 +481,7 @@ How the roadmap is implemented operationally. The roadmap above defines
 
 | #  | Chunk                          | Covers (§)        | Verifier                                                              |
 | -- | ------------------------------ | ----------------- | --------------------------------------------------------------------- |
-| B  | uv + httpx + Python 3.11 floor | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
+| ~~B~~ ✓ | ~~uv + httpx + Python 3.11 floor~~ done | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
 | C  | Test suite (golden, respx)     | §1.7              | `uv run pytest` green                                                 |
 | D  | Typing + `py.typed`            | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
 | E  | CI scaffolding                 | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
@@ -512,8 +523,9 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · Chunk A: restructure package, fix correctness bugs, move example · §1.1, §1.2, §1.3 · c8307ab
 - 2026-07-31 · (roadmap-only) adopt httpx sync-only in place of requests · locked-in decisions, §1.4/1.5/1.7/2.1/2.2/2.6/2.8/3.1, post-1.0 · 5e2f2c2
 - 2026-07-31 · (roadmap-only) record chunked execution strategy · execution plan · 06940a0
+- 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · <fill SHA at commit>
 
-_(next: Phase 1 chunks B–G are pending)_
+_(next: Phase 1 chunks C–G are pending)_
 
 ---
 
