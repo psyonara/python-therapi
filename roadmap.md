@@ -164,12 +164,18 @@ tool covering venvs, resolution, locking, running, and building.
   `respx = ">=0.21"` (httpx mock), `ruff = ">=0.6"`, `mypy = ">=1.11"`,
   `pytest-cov`.~~ ✓
 
-### 1.6 Type the library and ship `py.typed` (#8)
+### 1.6 Type the library and ship `py.typed` (#8) ✓
 
-- Add `therapi/py.typed` (empty marker file).
-- Type-annotate every public symbol; use `list[RequestModifier]` not
-  bare `list` (the 3.11 floor makes this clean).
-- Enable `mypy --strict` (or a curated strict subset) in CI.
+- ~~Add `therapi/py.typed` (empty marker file).~~ ✓ (verified shipped in
+  the wheel via `uv build`)
+- ~~Type-annotate every public symbol; use `list[RequestModifier]` not
+  bare `list` (the 3.11 floor makes this clean).~~ ✓ (internal recursive
+  `JSONValue` alias in `therapi/base.py` for JSON payloads; hook
+  signatures: `modify_headers(dict[str, str])`,
+  `modify_params(dict[str, Any])`, `modify_response(JSONValue)`)
+- ~~Enable `mypy --strict` (or a curated strict subset) in CI.~~ ✓
+  (`[tool.mypy] strict = true` in `pyproject.toml`, clean on
+  `uv run mypy therapi`; the CI rung itself remains open under §1.8)
 
 ### 1.7 Tests (zero → comprehensive) (#7) ✓
 
@@ -490,7 +496,7 @@ How the roadmap is implemented operationally. The roadmap above defines
 | -- | ------------------------------ | ----------------- | --------------------------------------------------------------------- |
 | ~~B~~ ✓ | ~~uv + httpx + Python 3.11 floor~~ done | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
 | ~~C~~ ✓ | ~~Test suite (golden, respx)~~ done | §1.7              | `uv run pytest` green                                                 |
-| D  | Typing + `py.typed`            | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
+| ~~D~~ ✓ | ~~Typing + `py.typed`~~ done | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
 | E  | CI scaffolding                 | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
 | F  | Repo hygiene                   | §1.9              | `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, templates exist; `dist/` untracked |
 | G  | Release `0.1.0`                | §1.10             | tag + GitHub Release + PyPI publish                                   |
@@ -533,7 +539,7 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
 - 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · b513681
 
-_(next: Phase 1 chunks D–G are pending)_
+_(next: Phase 1 chunks E–G are pending; chunk D's progress-log entry is appended once the work is committed)_
 
 ---
 

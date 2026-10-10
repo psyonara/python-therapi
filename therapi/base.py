@@ -1,34 +1,49 @@
 from dataclasses import dataclass
+from typing import Any, TypeAlias
 
 import httpx
+
+JSONValue: TypeAlias = (
+    dict[str, "JSONValue"] | list["JSONValue"] | str | int | float | bool | None
+)
+
+_BASE_URL_REQUIRED = (
+    "A base URL is required. Specify it as a class member, or when initializing your class instance."
+)
 
 
 @dataclass
 class Endpoint:
     url_path: str
     method: str
-    required_url_params: list = None
+    required_url_params: list[str] | None = None
 
 
 class RequestModifier:
-    def modify_headers(self, headers: dict):
+    def modify_headers(self, headers: dict[str, str]) -> None:
         pass
 
-    def modify_params(self, params: dict):
+    def modify_params(self, params: dict[str, Any]) -> None:
         pass
 
 
 class ResponseModifier:
-    def modify_response(self, json_data):
+    def modify_response(self, json_data: JSONValue) -> JSONValue:
         return json_data
 
 
 class BaseAPIConsumer:
-    base_url = None
-    request_modifiers: list = None
-    response_modifiers: list = None
+    base_url: str | None = None
+    request_modifiers: list[RequestModifier] | None = None
+    response_modifiers: list[ResponseModifier] | None = None
 
-    def __init__(self, base_url=None, request_modifiers=None, response_modifiers=None, timeout=30.0):
+    def __init__(
+        self,
+        base_url: str | None = None,
+        request_modifiers: list[RequestModifier] | None = None,
+        response_modifiers: list[ResponseModifier] | None = None,
+        timeout: float = 30.0,
+    ) -> None:
         if base_url:
             self.base_url = base_url
 
@@ -37,11 +52,11 @@ class BaseAPIConsumer:
         self.timeout = timeout
 
         if not self.base_url:
-            raise ValueError(
-                "A base URL is required. Specify it as a class member, or when initializing your class instance."
-            )
+            raise ValueError(_BASE_URL_REQUIRED)
 
-    def _build_url(self, *url_parts: str, params: dict = None):
+    def _build_url(self, *url_parts: str, params: dict[str, Any] | None = None) -> tuple[str, dict[str, Any]]:
+        if self.base_url is None:  # pragma: no cover - guarded by __init__
+            raise ValueError(_BASE_URL_REQUIRED)
         parts = [self.base_url.strip("/")] + [part.strip("/") for part in url_parts]
         url = "/".join(parts) + "/"
 
@@ -53,13 +68,19 @@ class BaseAPIConsumer:
 
         return url, remaining_params
 
-    def construct_url(self, *url_parts: str, params: dict = None):
+    def construct_url(self, *url_parts: str, params: dict[str, Any] | None = None) -> str:
         return self._build_url(*url_parts, params=params)[0]
 
-    def json_request(self, method, path, params=None, payload: dict = None):
-        headers = {}
+    def json_request(
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any] | None = None,
+        payload: dict[str, Any] | None = None,
+    ) -> JSONValue:
+        headers: dict[str, str] = {}
         params = dict(params or {})
-        for modifier in self.request_modifiers:
+        for modifier in self.request_modifiers or []:
             modifier.modify_headers(headers)
             modifier.modify_params(params)
 
@@ -75,14 +96,19 @@ class BaseAPIConsumer:
         )
         response.raise_for_status()
 
-        json_data = response.json()
+        json_data: JSONValue = response.json()
 
-        for modifier in self.response_modifiers:
-            json_data = modifier.modify_response(json_data)
+        for response_modifier in self.response_modifiers or []:
+            json_data = response_modifier.modify_response(json_data)
 
         return json_data
 
-    def call_endpoint(self, endpoint: Endpoint, params: dict = None, payload: dict = None):
+    def call_endpoint(
+        self,
+        endpoint: Endpoint,
+        params: dict[str, Any] | None = None,
+        payload: dict[str, Any] | None = None,
+    ) -> JSONValue:
         params = dict(params or {})
         if endpoint.required_url_params:
             for param in endpoint.required_url_params:
