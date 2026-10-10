@@ -538,8 +538,9 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · (roadmap-only) record chunked execution strategy · execution plan · 06940a0
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
 - 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · b513681
+- 2026-07-31 · Chunk D: full type annotations + `py.typed` + mypy `--strict` · §1.6 · 70da278
 
-_(next: Phase 1 chunks E–G are pending; chunk D's progress-log entry is appended once the work is committed)_
+_(next: Phase 1 chunks E–G are pending)_
 
 ---
 
