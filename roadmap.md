@@ -549,7 +549,7 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
 - 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · b513681
 - 2026-07-31 · Chunk D: full type annotations + `py.typed` + mypy `--strict` · §1.6 · 70da278
-- 2026-10-10 · Chunk E: CI scaffolding (ci.yml matrix + release.yml TestPyPI) · §1.8 · (SHA backfilled below)
+- 2026-10-10 · Chunk E: CI scaffolding (ci.yml matrix + release.yml TestPyPI) · §1.8 · 474af2b
 
 _(next: Phase 1 chunks F–G are pending)_
 
