@@ -37,7 +37,7 @@ This document records the agreed path from the current pre-release state
 | 5  | `therapi/base.py`               | ~~No request timeout~~ — fixed (instance `timeout=30.0`, passed to `requests`; `requests`→`httpx` swap in §1.4) ✓ |
 | 6  | `examples/thingiverse/`         | ~~Example shipped inside package~~ — moved out of `therapi/` ✓         |
 | 7  | repo                            | ~~Zero tests~~ — fixed (55 tests, 100% coverage) ✓ *(CI/lint/type-check still deferred, #8)* |
-| 8  | repo                            | No CI, no lint, no type-check, no `py.typed` *(open — deferred subset)* |
+| 8  | repo                            | ~~No CI, no lint, no type-check, no `py.typed`~~ — fixed (mypy `--strict` + `py.typed` in Chunk D; CI matrix + release workflow in Chunk E; hardening is §3.4) ✓ |
 | 9  | `pyproject.toml`                | `python = "^3.8"` — 3.8 EOL; also `list[X]` in code needs ≥3.9 *(open)* |
 | 10 | `therapi/modifiers.py`          | ~~`LoggingModifier` logs raw headers~~ — fixed (`redact_headers`) ✓     |
 
@@ -200,15 +200,25 @@ statement coverage; enforced `--cov-fail-under` gate deferred to §3.4.)
 `test_session_lifecycle.py` is deferred to Phase 2 (§2.1) — no session
 support exists yet.
 
-### 1.8 Initial CI scaffolding (#8)
+### 1.8 Initial CI scaffolding (#8) ✓
 
-- `.github/workflows/ci.yml`: matrix Python `3.11 / 3.12 / 3.13`;
+- ~~`.github/workflows/ci.yml`: matrix Python `3.11 / 3.12 / 3.13`;
   install via `uv` using the `astral-sh/setup-uv@v3` action (pin the
   action version); run `uv run ruff check`, `uv run mypy therapi`,
-  `uv run pytest`.
-- `.github/workflows/release.yml`: build wheels with `uv build`,
+  `uv run pytest`.~~ ✓ (user decisions: triggers = push to `main` +
+  PRs; `uv python install` + `uv sync --locked --python <matrix>` so
+  each leg overrides the `.python-version` pin; `fail-fast: false`;
+  no coverage gate / build job / OS matrix — §3.4 scope)
+- ~~`.github/workflows/release.yml`: build wheels with `uv build`,
   publish to TestPyPI on tag (gated), using trusted publishing (OIDC)
-  where possible.
+  where possible.~~ ✓ (user decision: gated = tag `v*` trigger + a
+  `testpypi` GitHub Environment; publishes via
+  `pypa/gh-action-pypi-publish@release/v1` with
+  `attestations: false` — attestations deferred to §3.4. One-time
+  manual steps, user-side: create the `testpypi` environment on
+  GitHub (optionally with required reviewers) and register the
+  trusted publisher for `release.yml` on TestPyPI. Real PyPI stays a
+  manual `uv publish` at §1.10.)
 
 ### 1.9 Repo hygiene
 
@@ -497,7 +507,7 @@ How the roadmap is implemented operationally. The roadmap above defines
 | ~~B~~ ✓ | ~~uv + httpx + Python 3.11 floor~~ done | §1.4, §1.5        | `uv sync && uv run python -c "import therapi"`; no `requests` in `therapi/`; `uv.lock` present |
 | ~~C~~ ✓ | ~~Test suite (golden, respx)~~ done | §1.7              | `uv run pytest` green                                                 |
 | ~~D~~ ✓ | ~~Typing + `py.typed`~~ done | §1.6              | `uv run mypy therapi` green; `py.typed` shipped                        |
-| E  | CI scaffolding                 | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
+| ~~E~~ ✓ | ~~CI scaffolding~~ done | §1.8              | CI green on push (matrix 3.11/3.12/3.13)                              |
 | F  | Repo hygiene                   | §1.9              | `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, templates exist; `dist/` untracked |
 | G  | Release `0.1.0`                | §1.10             | tag + GitHub Release + PyPI publish                                   |
 
@@ -539,8 +549,9 @@ Appended per chunk on completion. Format:
 - 2026-07-31 · Chunk B: uv + httpx + Python 3.11 floor · §1.4, §1.5 · fa3fea3
 - 2026-07-31 · Chunk C: test suite (pytest + respx) + path-param query fix · §1.7, §1.3 (#2) · b513681
 - 2026-07-31 · Chunk D: full type annotations + `py.typed` + mypy `--strict` · §1.6 · 70da278
+- 2026-10-10 · Chunk E: CI scaffolding (ci.yml matrix + release.yml TestPyPI) · §1.8 · (SHA backfilled below)
 
-_(next: Phase 1 chunks E–G are pending)_
+_(next: Phase 1 chunks F–G are pending)_
 
 ---
 
